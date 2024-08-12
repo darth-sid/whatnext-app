@@ -9,6 +9,7 @@ import SwiftUI
 import SwiftData
 
 @main
+
 struct whatnextApp: App {
     /*var sharedModelContainer: ModelContainer = {
         let schema = Schema([
