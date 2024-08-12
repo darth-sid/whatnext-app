@@ -59,30 +59,26 @@ struct TaskRow: View {
 }
 
 struct ContentView: View {
-    @State var settingsToggle: Bool = false
+    @State var s_val = 0.0
     @State var blur = 0.0
     var body: some View {
         ZStack {
             bg_color
                 .edgesIgnoringSafeArea(/*@START_MENU_TOKEN@*/.all/*@END_MENU_TOKEN@*/)
-            PrimaryView(settingsToggle: $settingsToggle).blur(radius: blur).animation(.snappy, value: blur)
-            if settingsToggle{
-                SettingsView(settingsToggle: $settingsToggle)
-                    .onAppear {
-                        blur = 3.0
-                    }
-                    .onDisappear {
-                        blur = 0.0
-                    }
+            PrimaryView(s_val: $s_val).blur(radius: s_val*2)//.animation(.snappy, value: blur)
+            if s_val == 1 {
+                SettingsView(s_val: $s_val)
+                    //.transition(.opacity)// (scale: 0, anchor: .bottomTrailing))
             }
         }
     }
 }
 
 struct PrimaryView: View {
-    @Binding var settingsToggle: Bool
+    @Binding var s_val: Double
     @Environment(\.modelContext) var modelContext
     @Query var tasks: [Task]
+    @State var anim: Double = 0
     
     var body: some View {
         VStack {
@@ -142,14 +138,17 @@ struct PrimaryView: View {
                 
 
                     Button{
-                        settingsToggle = true
+                        withAnimation(Animation.easeOut(duration: 0.5)) {
+                            s_val = 1
+                        }
                         // summon settings: flip, zoom, help,esl color,
                     } label: {
-                        if !settingsToggle {
+                        if s_val == 0 {
                             Image(systemName: "gearshape")
                                 .resizable()
                                 .frame(width: 20.0, height: 20.0)
                                 .foregroundStyle(contrast_color)
+                                .animated_flip(axis: (-1,-1,0))
                         }
                     }
                     .padding(.trailing, 20.0)
@@ -169,7 +168,8 @@ struct PrimaryView: View {
 }
 
 struct SettingsView: View {
-    @Binding var settingsToggle: Bool
+    @Binding var s_val: Double
+    @State var anim: Double = 0
     
     var body: some View {
         HStack() {
@@ -177,12 +177,15 @@ struct SettingsView: View {
             VStack(alignment: .center) {
                 Spacer()
                 Button{
-                    settingsToggle = false
+                    withAnimation(Animation.easeOut(duration: 1)) {
+                        s_val = 0
+                    }
                 } label: {
                     Image(systemName: "gearshape.circle.fill")
                         .resizable()
                         .frame(width: 40, height: 40)
                         .foregroundStyle(contrast_color)
+                        .animated_flip(axis: (1,1,0))
                 }
                 .padding(.trailing, 20.0)
                 .frame(maxWidth: 80, maxHeight: 20)
@@ -190,9 +193,26 @@ struct SettingsView: View {
             }
 
         }.padding()
-            //Spacer().frame(width: 50)
     }
-    
+}
+
+extension View {
+    func animated_flip(axis: (CGFloat, CGFloat, CGFloat)) -> some View {
+        modifier(flipAnimation(axis:axis))
+    }
+}
+
+struct flipAnimation: ViewModifier {
+    var axis: (CGFloat, CGFloat, CGFloat)
+    @State var animation_value = 0.0
+    func body(content: Content) -> some View{
+        return content
+            .scaleEffect(animation_value)
+            .rotation3DEffect(.degrees(animation_value*180),axis: axis)
+            .animation(.easeOut(duration:0.5), value: animation_value)
+            .onAppear{animation_value=1}
+            .onDisappear{animation_value=0}
+    }
 }
 
 #Preview {
