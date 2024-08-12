@@ -9,10 +9,23 @@ import Foundation
 import SwiftData
 
 @Model
-final class Item {
-    var timestamp: Date
+class Task {
+    @Attribute(.unique) let id = UUID()
+    var content: String
+    var timed: Bool = false
+    var alarm: Bool = false
+    var time: Date
     
-    init(timestamp: Date) {
-        self.timestamp = timestamp
+    init(content: String="", time: Date = Date.now){
+        self.content = content
+        self.time = time
+    }
+    
+    func toggleTime(){
+        self.timed = !self.timed
+    }
+    
+    func toggleAlarm(){
+        self.alarm = !self.alarm
     }
 }

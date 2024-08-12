@@ -6,34 +6,10 @@
 //
 
 import SwiftUI
-
-class TaskList: ObservableObject {
-    @Published var tasks: Array<Task> = [Task(content: "")]
-    
-    func addEmpty() {
-        let t = Task(content: "")
-        tasks.append(t)
-    }
-}
-
-struct Task: Identifiable {
-    let id = UUID()
-    var content: String
-    var timed: Bool = true
-    var alarm: Bool = false
-    var time: Date = Date.now
-    
-    mutating func timeEnable() {
-        timed = !timed
-    }
-    mutating func alarmEnable() {
-        alarm = !alarm
-    }
-}
+import SwiftData
 
 struct TaskRow: View {
-    @Binding var task: Task
-    
+    @Bindable var task: Task
     var body: some View {
         HStack {
 
@@ -55,7 +31,7 @@ struct TaskRow: View {
                 }
             }
             Button{
-                task.timeEnable()
+                task.toggleTime()
                 print("btn")
             } label: {
                 Image(systemName: "clock").resizable()
@@ -69,8 +45,8 @@ struct TaskRow: View {
 }
 
 struct ContentView: View {
-    
-    @ObservedObject private var tasks = TaskList()
+    @Environment(\.modelContext) var modelContext
+    @Query private var tasks: [Task]
     
     var body: some View {
         
@@ -88,16 +64,16 @@ struct ContentView: View {
                 Spacer()
                 
                 List {
-                    ForEach(Array($tasks.tasks), id: \.id){$task in
-                        TaskRow(task: $task)
+                    ForEach(Array(tasks), id: \.id){task in
+                        TaskRow(task: task)
                             .swipeActions{
                                 Button("Delete", systemImage: "trash", role: .destructive) {
-                                    tasks.tasks.removeAll(where: {$0.id == task.id})
+                                    removeTask(task: task)
                                 }
                             }.tint(.red)
                             .swipeActions(edge:.leading){
                                 Button("Time", systemImage: "alarm") {
-                                    if task.timed {task.alarmEnable()}
+                                    if task.timed {task.toggleAlarm()}
                                 }
                             }.tint(task.timed ? .blue : .gray)
                     }.listRowBackground(Color.green)
@@ -110,7 +86,7 @@ struct ContentView: View {
                     Spacer()
                         .frame(width: 20.0)
                     
-                    Text(String($tasks.tasks.count) + " tasks")
+                    Text(String(tasks.count) + " tasks")
                         .foregroundStyle(.white)
                         .padding(.top, 20.0)
                         .opacity(0.5)
@@ -119,7 +95,7 @@ struct ContentView: View {
                     Spacer()
                     
                     Button{
-                        tasks.addEmpty()
+                        addEmptyTask()
                     } label: {
                         Image(systemName: "plus.circle")
                             .resizable()
@@ -150,6 +126,14 @@ struct ContentView: View {
 
         }
             
+    }
+    
+    func addEmptyTask() {
+        modelContext.insert(Task())
+    }
+    
+    func removeTask(task: Task) {
+        modelContext.delete(task)
     }
 }
 

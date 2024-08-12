@@ -10,9 +10,9 @@ import SwiftData
 
 @main
 struct whatnextApp: App {
-    var sharedModelContainer: ModelContainer = {
+    /*var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            Task.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
@@ -21,12 +21,12 @@ struct whatnextApp: App {
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
-    }()
+    }()*/
 
     var body: some Scene {
         WindowGroup {
             ContentView()
-        }
-        .modelContainer(sharedModelContainer)
+        }.modelContainer(for: Task.self)
+        //.modelContainer(sharedModelContainer)
     }
 }
