@@ -83,9 +83,9 @@ struct TaskRow: View {
                 task.toggleTime()
                 print("btn")
             } label: {
-                if task.alarm {
+                if task.alarm && task.timed {
                     Image(systemName: "alarm").resizable()
-                        .foregroundColor(settings.color_scheme["clock"])
+                        .foregroundColor(task.timed ? settings.color_scheme["clock"] : settings.color_scheme["inactive"])
                         .bold()
                 }
                 else {
@@ -102,25 +102,30 @@ struct TaskRow: View {
 
 struct ContentView: View {
     @EnvironmentObject var settings: UserSettings
-    @State var s_val = 0.0
+    @State var show_settings = false
+    @State var anim_val = 0.0
     var body: some View {
         ZStack {
             settings.color_scheme["bg"]
                 .edgesIgnoringSafeArea(/*@START_MENU_TOKEN@*/.all/*@END_MENU_TOKEN@*/)
-            PrimaryView(s_val: $s_val).blur(radius: s_val*3)
-            if s_val == 1 {
-                SettingsView(s_val: $s_val)
+            PrimaryView(show_settings: $show_settings)//.blur(radius: anim_val*3)
+            if show_settings {
+                SettingsView(show_settings: $show_settings)
+                    //.onAppear{withAnimation(.easeIn){anim_val=1}}
+                    //.onDisappear{anim_val=0}
+                    .background(.ultraThinMaterial)
+                    .transition(.opacity)
             }
         }
+        .environment(\.colorScheme, settings.light_mode ? .light : .dark)
     }
 }
 
 struct PrimaryView: View {
     @EnvironmentObject var settings: UserSettings
-    @Binding var s_val: Double
+    @Binding var show_settings: Bool
     @Environment(\.modelContext) var modelContext
     @Query var tasks: [Task]
-    @State var anim: Double = 0
     
     var body: some View {
         VStack {
@@ -180,22 +185,22 @@ struct PrimaryView: View {
                 
 
                 Button{
-                    withAnimation(Animation.easeOut(duration: 0.5)) {
-                        s_val = 1
+                    withAnimation(.easeInOut) {
+                        show_settings = true
                     }
                 } label: {
-                    if s_val == 0 {
+                    if !show_settings{
                         Image(systemName: "gearshape")
                             .resizable()
                             .frame(width: 20.0, height: 20.0)
                             .foregroundStyle(settings.color_scheme["contrast"]!)
-                            .animated_flip(axis: (-1,-1,0))
                     }
                 }
                 .padding(.trailing, 20.0)
                 .frame(maxWidth:80, maxHeight: 20)
                 
             }.frame(height:50)
+            .padding(.bottom, 10.0)
             .environment(\.layoutDirection, settings.lefty ? .rightToLeft : .leftToRight)
         }.padding()
     }
@@ -211,7 +216,7 @@ struct PrimaryView: View {
 
 struct SettingsView: View {
     @EnvironmentObject var settings: UserSettings
-    @Binding var s_val: Double
+    @Binding var show_settings: Bool
     @State var anim: Double = 0
     
     var body: some View {
@@ -220,75 +225,68 @@ struct SettingsView: View {
             Spacer()
             VStack(alignment: .center) {
                 Spacer()
+                
                 Button {
                     //help
                 } label: {
                     Image(systemName: "questionmark.circle")
-                        .settings_icon(color: settings.color_scheme["contrast"]!)
+                        .settings_icon(color: settings.color_scheme["contrast"]!, s_val: 0)
                 }
+                
                 Spacer()
                     .frame(height:40)
+                
                 Button {
                     withAnimation(.bouncy) {
                         settings.toggleLefty()
                     }
                 } label: {
                     Image(systemName: settings.lefty ? "circle.righthalf.filled" : "circle.lefthalf.filled")
-                        .settings_icon(color: settings.color_scheme["contrast"]!)
+                        .settings_icon(color: settings.color_scheme["contrast"]!, s_val: 0)
                 }
+                
                 Spacer()
                     .frame(height:40)
+
                 Button {
                     settings.toggleLightMode()
                 } label: {
                     Image(systemName: settings.light_mode ? "lightbulb.circle.fill" : "lightbulb.circle")
-                        .settings_icon(color: settings.color_scheme["contrast"]!)
+                        .settings_icon(color: settings.color_scheme["contrast"]!, s_val: 0)
                 }
+                
                 Spacer()
                     .frame(height:40)
+                
                 Button {
-                    withAnimation(Animation.easeOut(duration: 1)) {
-                        s_val = 0 // TODO: exit animation
+                    withAnimation(.easeInOut) {
+                        show_settings = false
                     }
+                    
                 } label: {
                     Image(systemName: "gearshape.circle.fill")
-                        .settings_icon(color: settings.color_scheme["contrast"]!)
+                        .settings_icon(color: settings.color_scheme["contrast"]!, s_val: 0)
                 }
+                
+                Spacer()
+                    .frame(height:10)
+                
             }
         }.padding()
         .environment(\.layoutDirection, settings.lefty ? .rightToLeft : .leftToRight)
     }
 }
 
-extension View {
-    func animated_flip(axis: (CGFloat, CGFloat, CGFloat)) -> some View {
-        modifier(flipAnimation(axis:axis))
-    }
-}
-
 extension Image {
-    func settings_icon(color: Color) -> some View {
+    func settings_icon(color: Color, s_val: Double) -> some View {
         self
             .resizable()
             .frame(width: 40, height: 40)
             .foregroundStyle(color)
-            .rotation3DEffect(.degrees(180), axis: (-1,-1,0))
+        //.rotation3DEffect(.degrees(180), axis: (-1,-1,0))
             .frame(maxWidth: 80, maxHeight: 20)
-            .padding(.trailing, 20.0)
-            .animated_flip(axis: (1,1,0))
-    }
-}
-
-struct flipAnimation: ViewModifier {
-    var axis: (CGFloat, CGFloat, CGFloat)
-    @State var animation_value = 0.0
-    func body(content: Content) -> some View {
-        return content
-            .scaleEffect(animation_value)
-            .rotation3DEffect(.degrees(animation_value*180),axis: axis)
-            .animation(.easeOut(duration:0.5), value: animation_value)
-            .onAppear{animation_value=1}
-            .onDisappear{animation_value=0}
+            .padding(.trailing, 10.0)
+        //.animated_flip(anim_val: s_val, axis: (1,1,0))
     }
 }
 
